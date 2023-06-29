@@ -72,17 +72,16 @@ const addUser = function(user) {
   const query = `INSERT INTO users (name, email, password)
                 VALUES ($1, $2, $3)
                 RETURNING *`;
-  const values = [ user.name, user.email, user.password];
+  const values = [user.name, user.email, user.password];
 
   return pool.query(query, values)
     .then(response => {
-      console.log('ressss', response);
       return response;
     })
     .catch((err) => {
       console.log(err.message);
     });
-}
+};
 
 
 /// Reservations
@@ -92,10 +91,41 @@ const addUser = function(user) {
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
+
+// SELECT reservations.id, properties.title, reservations.start_date,
+// cost_per_night, avg(rating) as average_rating
+// FROM reservations
+// JOIN properties ON reservations.property_id = properties.id
+// JOIN property_reviews ON property_reviews.property_id = properties.id
+// WHERE reservations.guest_id = 1
+// GROUP BY reservations.id, properties.title, cost_per_night
+// ORDER BY reservations.start_date
+// LIMIT 10;
+
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+
+
+  const query = `SELECT reservations.*, properties.*, avg(rating) as average_rating
+  FROM reservations
+  JOIN properties ON reservations.property_id = properties.id
+  JOIN property_reviews ON property_reviews.property_id = properties.id
+  WHERE reservations.guest_id = $1
+  GROUP BY reservations.id, properties.id, cost_per_night
+  ORDER BY reservations.start_date
+  LIMIT $2;
+  `;
+
+  const values = [guest_id, limit];
+  return pool.query(query, values)
+    .then(response => {
+      return response.rows;
+    })
+    .catch((err) => {
+      console.log(err.message);
+    });
 };
 
+getAllReservations(2, 10).then(res => console.log('res', res));
 /// Properties
 
 /**
