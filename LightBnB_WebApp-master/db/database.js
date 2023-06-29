@@ -9,6 +9,8 @@ const pool = new Pool({
   database: 'lightbnb'
 });
 
+
+
 /// Users
 
 /**
@@ -30,15 +32,8 @@ const getUserWithEmail = function(email) {
     .catch((err) => {
       console.log(err.message);
     });
-
-  //EXPECTED RESULT
-  // {
-  //   name: 'Estella Rios',
-  //   email: 'elizabethyork@ymail.com',
-  //   password: '$2a$10$FB/BOAVhpuLvpOREQVmvmezD4ED/.JBIDRh70tGevYzYzQgFId2u.',
-  //   id: 1
-  // }
 };
+
 
 
 /**
@@ -60,6 +55,8 @@ const getUserWithId = function(id) {
       console.log(err.message);
     });
 };
+
+
 
 // getUserWithId(1).then( res => console.log('RESSS', res))
 /**
@@ -84,6 +81,7 @@ const addUser = function(user) {
 };
 
 
+
 /// Reservations
 
 /**
@@ -91,17 +89,6 @@ const addUser = function(user) {
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-
-// SELECT reservations.id, properties.title, reservations.start_date,
-// cost_per_night, avg(rating) as average_rating
-// FROM reservations
-// JOIN properties ON reservations.property_id = properties.id
-// JOIN property_reviews ON property_reviews.property_id = properties.id
-// WHERE reservations.guest_id = 1
-// GROUP BY reservations.id, properties.title, cost_per_night
-// ORDER BY reservations.start_date
-// LIMIT 10;
-
 const getAllReservations = function(guest_id, limit = 10) {
 
   const query = `SELECT reservations.*, properties.*, avg(rating) as average_rating
@@ -123,6 +110,8 @@ const getAllReservations = function(guest_id, limit = 10) {
       console.log(err.message);
     });
 };
+
+
 
 /**
  * Get all properties.
@@ -185,17 +174,66 @@ const getAllProperties = function(options, limit = 10) {
     });
 };
 
+
+
 /**
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+
+  let columnsBracket = ``;
+  let valuesBracket = ``;
+  const values = [];
+
+  const propertyKeys = Object.keys(property);
+  for (let i = 0; i < propertyKeys.length; i++) {
+    const key = propertyKeys[i];
+    columnsBracket += `${key}`;
+    valuesBracket += `$${i + 1}`;
+    values.push(property[key]);
+
+    if (i !== propertyKeys.length - 1) {
+      columnsBracket += ', ';
+      valuesBracket += ', ';
+    }
+  }
+
+  const query = `INSERT INTO properties (${columnsBracket})
+  VALUES (${valuesBracket})
+  RETURNING *`;
+
+  console.log('QUERY', query);
+
+  return pool.query(query, values)
+    .then(response => {
+      console.log('RES', response);
+      return response;
+    })
+    .catch((err) => {
+      console.log(err.message);
+    });
 };
+
+// const testObj = {
+//   owner_id: 'int',
+//   title: 'string',
+//   description: 'string',
+//   thumbnail_photo_url: 'string',
+//   cover_photo_url: 'string',
+//   cost_per_night: 'string',
+//   street: 'string',
+//   city: 'string',
+//   province: 'string',
+//   post_code: 'string',
+//   country: 'string',
+//   parking_spaces: 'int',
+//   number_of_bathrooms: 'int',
+//   number_of_bedrooms: 'int'
+// };
+
+// addProperty(testObj);
 
 module.exports = {
   getUserWithEmail,
